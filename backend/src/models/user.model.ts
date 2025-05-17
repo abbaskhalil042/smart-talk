@@ -1,11 +1,17 @@
-import mongoose, { Document } from "mongoose";
+import mongoose, { Schema, model, Types, Document } from "mongoose";
 
-interface userSchemaType extends Document {
+// Interface for the user data
+export interface IUser {
   email: string;
   password: string;
 }
 
-const userSchema = new mongoose.Schema<userSchemaType>({
+// Interface for the document returned by Mongoose (includes _id and methods)
+export interface IUserDocument extends IUser, Document {
+  _id: Types.ObjectId;
+}
+
+const userSchema = new Schema<IUserDocument>({
   email: {
     type: String,
     required: [true, "Email is required"],
@@ -14,7 +20,6 @@ const userSchema = new mongoose.Schema<userSchemaType>({
     trim: true,
     match: [/\S+@\S+\.\S+/, "Email should be valid"],
   },
-
   password: {
     type: String,
     required: true,
@@ -22,5 +27,5 @@ const userSchema = new mongoose.Schema<userSchemaType>({
   },
 });
 
-const User = mongoose.model<userSchemaType>("User", userSchema);
+const User = model<IUserDocument>("user", userSchema);
 export default User;

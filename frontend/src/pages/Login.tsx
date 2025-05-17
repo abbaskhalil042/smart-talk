@@ -1,18 +1,24 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { SubmitHandler, useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import z from "zod";
-import axiosInstance from "../config/axios";
-import { Loader2 } from "lucide-react";
 
-const singupSchema = z.object({
+import { useForm, SubmitHandler } from "react-hook-form";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import axiosInstance from "../config/axios";
+import { useContext } from "react";
+import { UserAuthContext } from "../context/userAuth";
+
+console.log("API Base URL:", import.meta.env.VITE_API_URL);
+
+const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
 
-type FormFields = z.infer<typeof singupSchema>;
+type FormFields = z.infer<typeof loginSchema>;
 
-const Signup = () => {
+const Login = () => {
+  const { setUser } = useContext(UserAuthContext);
   const navigate = useNavigate();
   const {
     register,
@@ -20,17 +26,22 @@ const Signup = () => {
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({ resolver: zodResolver(singupSchema) });
+  } = useForm<FormFields>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit: SubmitHandler<FormFields> = async (data) => {
     try {
       const response = await axiosInstance.post(
-        "/api/v1/auth/user/signup",
+        "/api/v1/auth/user/signin",
         data
       );
+
       const result = response.data;
 
-      navigate("/signin");
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.user));
+      setUser(result.user);
+
+      navigate("/");
 
       reset();
       console.log(result);
@@ -40,11 +51,12 @@ const Signup = () => {
       });
     }
   };
+
   return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
       <div className="bg-[#1e293b] p-8 rounded-2xl shadow-lg w-full max-w-md">
         <h2 className="text-3xl font-bold text-white text-center mb-6">
-          Create Account
+          Welcome back
         </h2>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
@@ -66,20 +78,26 @@ const Signup = () => {
             />
           </div>
           {errors.root && (
-            <p className="text-red-500 text-sm mt-2">{errors.root.message}</p>
+            <p className="text-red-500 text-sm">{errors.root?.message}</p>
           )}
+
           <button
             disabled={isSubmitting}
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-300"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-300 cursor-pointer"
           >
-            Sign Up {isSubmitting && <Loader2 className="animate-spin" />}
+            Login{" "}
+            {isSubmitting && (
+              <span>
+                <Loader2 className="animate-spin" />
+              </span>
+            )}
           </button>
         </form>
         <p className="text-center text-sm text-gray-400 mt-5">
-          Already have an account?{" "}
-          <Link to="/" className="text-blue-400 hover:underline">
-            Log in
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-blue-400 hover:underline">
+            Signup{" "}
           </Link>
         </p>
       </div>
@@ -87,4 +105,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default Login;
